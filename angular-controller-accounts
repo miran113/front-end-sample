@@ -1,0 +1,183 @@
+
+(function () {
+    "use strict";
+    angular.module(APPNAME)
+    .controller('accountController', AccountController);
+    
+    AccountController.$inject = ['$scope', '$baseController', 'accountService', 'productService', '$routeParams'];
+    
+    function AccountController($scope, $baseController, accountService, productService, $routeParams) {
+
+    var vm = this;
+
+    vm.$scope = $scope;
+    vm.id = $routeParams.productId
+
+    vm.item = null;
+    vm.itemIndex = -1;
+    vm.items = [];
+    vm.coachAccounts = [];
+
+    vm.healthy = null;
+    vm.filterFlag = null;
+    vm.change = null;
+    vm.searchTerm = null;
+
+    vm.toggle = _toggle;
+    vm.myFilter = myFilter;
+    vm.isProductExisting = isProductExisting;
+    vm.ctrlPagination = _ctrlPagination;
+
+    vm.accountService = accountService;
+    vm.productService = productService;
+
+    $baseController.merge(vm, $baseController);
+    vm.notify = vm.productService.getNotifier($scope);
+
+
+    _render();
+
+    function _render() {
+        _startUp();
+
+        vm.productService.get(vm.id, _onGetProductSuccess, _onError);
+        vm.productService.getAccounts(vm.id, _onGetAccountsSuccess, _onError);
+        vm.$systemEventService.listen("searchStarted", _onSystemEventSearch);
+
+        getPage(0, 2);
+
+        vm.currentAccountModifier = 2;
+    }
+
+    function _startUp() {
+        vm.currentId = null;
+        vm.item = null;
+        vm.itemIndex = null;
+        vm.currentPage = 1;
+        vm.pageSize = 5;
+    }
+
+
+    function getPage(pageIndex, accountModifier, searchTerm) {
+
+        if (searchTerm) {
+            vm.accountService.getSearch(searchTerm, pageIndex, 2, accountModifier, _onGetPageSuccess, _onError);
+        }
+        else {
+            vm.accountService.getPagingByModifier(pageIndex, vm.pageSize, accountModifier, _onGetPageSuccess, _onError);
+        }
+    }
+
+    function _onSystemEventSearch(event, payload) {
+
+        vm.searchTerm = payload[1].message;
+        getPage(0, vm.currentAccountModifier, vm.searchTerm)
+
+    }
+
+   function myFilter(singleProduct, index, fullArrry) {
+        if (vm.filterFlag == true && (isProductExisting(singleProduct.userId))) {
+            vm.change = "Selected Coaches";
+            return true;
+        }
+        else if (vm.filterFlag == true && (!isProductExisting(singleProduct.userId))) {
+            return false;
+        }
+        else if (vm.filterFlag == false && (!isProductExisting(singleProduct.userId))) {
+            vm.change = "Unselected Coaches"
+            return true;
+        }
+        else if (vm.filterFlag == false && (isProductExisting(singleProduct.userId))) {
+            return false;
+        }
+        else if (vm.filterFlag == null && (singleProduct)) {
+            vm.change = "All Coaches";
+            return true;
+        }
+
+    }
+
+   function isProductExisting(singleId) {
+        var isExisting = null;
+
+        for (i = 0; i < vm.coachAccounts.length; i++) {
+            if (vm.coachAccounts[i] == singleId) {
+                isExisting = vm.coachAccounts[i];
+                break;
+            }
+        }
+        return isExisting;
+    }
+
+   function _toggle(item) {
+        if (!isProductExisting(item)) {
+            vm.productService.addCoachRelation(item, vm.id, _onAddSuccess, _onError);
+        }
+        else {
+            vm.productService.deleteCoachRelation(item, vm.id, _onDeleteSuccess, _onError);
+        }
+    }
+
+   function _ctrlPagination(page, pageSize) {
+        var dbpageIndex = page - 1;
+        getPage(dbpageIndex, vm.currentAccountModifier, vm.searchTerm);
+    }
+
+    //---------------------------AJAX SUCCESS!---------------------------//
+
+    function _onAddSuccess(data, idToFind) {
+        vm.notify(function () {
+
+            vm.coachAccounts.push(idToFind);
+            console.log(vm.coachAccounts);
+        });
+    }
+
+    function _onDeleteSuccess(data, idToFind) {
+        vm.notify(function () {
+
+            vm.itemIndex = vm.coachAccounts.indexOf(idToFind);
+            vm.coachAccounts.splice(vm.itemIndex, 1);
+            console.log(vm.coachAccounts);
+        });
+
+    }
+
+    function _onGetAccountsSuccess(data) {
+        vm.notify(function () {
+            for (i = 0; i < data.items.length; i++) {
+                vm.coachAccounts.push(data.items[i].userId);
+            }
+
+        });
+    }
+
+    function _onGetModifierSuccess(data) {
+        vm.notify(function () {
+            vm.items = data.items;
+
+        });
+    }
+
+    function _onGetPageSuccess(data) {
+
+        vm.notify(function () {
+            vm.items = data.item;
+        });
+    }
+
+    function _onGetProductSuccess(data) {
+        vm.notify(function () {
+            vm.item = data.item;
+
+        });
+    }
+
+    //---------------------------AJAX ERROR!---------------------------//
+    function _onError(data) {
+        console.log("AJAX ERROR!")
+        console.log(data);
+    }
+
+  }
+})();
