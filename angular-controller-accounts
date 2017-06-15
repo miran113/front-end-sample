@@ -4,9 +4,9 @@
     angular.module(APPNAME)
     .controller('accountController', AccountController);
     
-    AccountController.$inject = ['$scope', '$baseController', 'accountService', 'productService', '$routeParams'];
+   AccountController.$inject = ['$scope', '$baseController', 'accountService', 'productService', '$routeParams'];
     
-    function AccountController($scope, $baseController, accountService, productService, $routeParams) {
+   function AccountController($scope, $baseController, accountService, productService, $routeParams) {
 
     var vm = this;
 
@@ -37,7 +37,7 @@
 
     _render();
 
-    function _render() {
+   function _render() {
         _startUp();
 
         vm.productService.get(vm.id, _onGetProductSuccess, _onError);
@@ -49,16 +49,22 @@
         vm.currentAccountModifier = 2;
     }
 
-    function _startUp() {
+   function _startUp() {
         vm.currentId = null;
         vm.item = null;
         vm.itemIndex = null;
         vm.currentPage = 1;
         vm.pageSize = 5;
     }
+    
+   function _onSystemEventSearch(event, payload) {
 
+        vm.searchTerm = payload[1].message;
+        getPage(0, vm.currentAccountModifier, vm.searchTerm)
 
-    function getPage(pageIndex, accountModifier, searchTerm) {
+    }
+
+   function getPage(pageIndex, accountModifier, searchTerm) {
 
         if (searchTerm) {
             vm.accountService.getSearch(searchTerm, pageIndex, 2, accountModifier, _onGetPageSuccess, _onError);
@@ -67,12 +73,18 @@
             vm.accountService.getPagingByModifier(pageIndex, vm.pageSize, accountModifier, _onGetPageSuccess, _onError);
         }
     }
+    
+    
+   function isProductExisting(singleId) {
+        var isExisting = null;
 
-    function _onSystemEventSearch(event, payload) {
-
-        vm.searchTerm = payload[1].message;
-        getPage(0, vm.currentAccountModifier, vm.searchTerm)
-
+        for (i = 0; i < vm.coachAccounts.length; i++) {
+            if (vm.coachAccounts[i] == singleId) {
+                isExisting = vm.coachAccounts[i];
+                break;
+            }
+        }
+        return isExisting;
     }
 
    function myFilter(singleProduct, index, fullArrry) {
@@ -97,17 +109,6 @@
 
     }
 
-   function isProductExisting(singleId) {
-        var isExisting = null;
-
-        for (i = 0; i < vm.coachAccounts.length; i++) {
-            if (vm.coachAccounts[i] == singleId) {
-                isExisting = vm.coachAccounts[i];
-                break;
-            }
-        }
-        return isExisting;
-    }
 
    function _toggle(item) {
         if (!isProductExisting(item)) {
