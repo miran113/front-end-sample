@@ -1,0 +1,11 @@
+function getNumbers(inputString) {
+    var regex = /\d+\.\d+|\.\d+|\d+/g,
+        results = [],
+        n;
+
+    while (n = regex.exec(inputString)) {
+        results.push(parseFloat(n[0]));
+    }
+
+    return results;
+}
