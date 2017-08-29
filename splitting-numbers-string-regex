@@ -9,3 +9,5 @@ function getNumbers(inputString) {
 
     return results;
 }
+
+console.log(getNumbers(info));
